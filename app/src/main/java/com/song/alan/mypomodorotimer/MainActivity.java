@@ -8,39 +8,62 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int COUNT_DOWN_INTERVAL = 500;
 
-    private EditText mEditTextInput;
+    private View mViewDummyOutside;
+    private EditText mEditTextTask;
+
     private TextView mTextViewCountDown;
-    private Button mButtonSet;
+
     private Button mButtonStartPause;
     private Button mButtonReset;
+    private NumberPicker mNumberPickerTime;
+    private ViewSwitcher mViewSwitcherTime;
 
     private CountDownTimer mCountDownTimer;
 
     private boolean mTimerRunning;
+    private boolean mTimerPaused;
 
     private long mStartTimeInMillis;
     private long mTimeLeftinMillis;
     private long mEndTime;
+
+    private String[] time_values;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        initialize();
+    }
+
+    private void initialize() {
         findViews();
         setOnClickListeners();
+
+        initializeViewSwitcher();
+    }
+
+
+    private void initializeAfterLoading() {
+        initializeNumberPicker();
     }
 
     private void findViews() {
@@ -48,8 +71,12 @@ public class MainActivity extends AppCompatActivity {
         mButtonStartPause = findViewById(R.id.button_start_pause);
         mButtonReset = findViewById(R.id.button_reset);
 
-        mEditTextInput = findViewById(R.id.edit_text_input);
-        mButtonSet = findViewById(R.id.button_set);
+        mEditTextTask = findViewById(R.id.edit_text_task);
+
+        mViewSwitcherTime = findViewById(R.id.view_switcher_countdown);
+        mNumberPickerTime = findViewById(R.id.number_picker_countdown);
+
+        mViewDummyOutside = findViewById(R.id.view_dummy_outside);
     }
 
     private void setOnClickListeners() {
@@ -71,26 +98,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mButtonSet.setOnClickListener(new View.OnClickListener() {
+        mTextViewCountDown.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String input = mEditTextInput.getText().toString();
-                if (input.length() == 0) {
-                    Toast.makeText(MainActivity.this,
-                            "Field can't be empty", Toast.LENGTH_SHORT).show();
-                    return;
+                if (!mTimerRunning && !mTimerPaused) {
+                    mViewSwitcherTime.showNext();
                 }
+            }
+        });
 
-                long millisInput = Long.parseLong(input) * 60000 / 60;
+        mViewDummyOutside.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mViewSwitcherTime.getCurrentView() == mNumberPickerTime) {
+                    long time = Long.parseLong(time_values[mNumberPickerTime.getValue()]) * 60000;
+                    setTime(time);
 
-                if (millisInput == 0) {
-                    Toast.makeText(MainActivity.this,
-                            "Please enter a positive number", Toast.LENGTH_SHORT).show();
-                    return;
+                    mViewSwitcherTime.showNext();
                 }
-
-                setTime(millisInput);
-                mEditTextInput.setText("");
             }
         });
     }
@@ -101,6 +126,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startTimer() {
+        if (!mTimerPaused) {
+            long time = Long.parseLong(time_values[mNumberPickerTime.getValue()]) * 60000;
+            setTime(time);
+        }
+
+        if (mViewSwitcherTime.getCurrentView() == mNumberPickerTime) {
+            mViewSwitcherTime.showNext();
+        }
+
         mEndTime = System.currentTimeMillis() + mTimeLeftinMillis;
 
         mCountDownTimer = new CountDownTimer(mTimeLeftinMillis, COUNT_DOWN_INTERVAL) {
@@ -115,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 vibrate(1500);
 
                 mTimerRunning = false;
+                mTimerPaused = false;
                 updateWatchInterface();
             }
         }.start();
@@ -126,11 +161,13 @@ public class MainActivity extends AppCompatActivity {
     private void pauseTimer() {
         mCountDownTimer.cancel();
         mTimerRunning = false;
+        mTimerPaused = true;
         updateWatchInterface();
     }
 
     private void resetTimer() {
         mTimeLeftinMillis = mStartTimeInMillis;
+        mTimerPaused = false;
         updateCountDownText();
         updateWatchInterface();
     }
@@ -154,13 +191,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateWatchInterface() {
         if (mTimerRunning) {
-            mEditTextInput.setVisibility(View.INVISIBLE);
-            mButtonSet.setVisibility(View.INVISIBLE);
             mButtonReset.setVisibility(View.INVISIBLE);
             mButtonStartPause.setText("Pause");
         } else {
-            mEditTextInput.setVisibility(View.VISIBLE);
-            mButtonSet.setVisibility(View.VISIBLE);
             mButtonStartPause.setText("Start");
 
             if (mTimeLeftinMillis < COUNT_DOWN_INTERVAL) {
@@ -188,33 +221,44 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void initializeNumberPicker() {
+        time_values = getResources().getStringArray(R.array.countdown_times);
+        long minutes = mStartTimeInMillis / 60000;
+        String stringMinutes = String.valueOf((minutes));
+        int default_index = Arrays.asList(time_values).indexOf(stringMinutes);
+
+        mNumberPickerTime.setMinValue(0);
+        mNumberPickerTime.setMaxValue(time_values.length-1);
+        mNumberPickerTime.setValue(default_index);
+        mNumberPickerTime.setDisplayedValues(time_values);
+    }
+
+    private void initializeViewSwitcher() {
+
+    }
+
     @Override
     protected void onStop() {
         super.onStop();
 
-        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putLong("start_time_in_millis", mStartTimeInMillis);
-        editor.putLong("millis_left", mTimeLeftinMillis);
-        editor.putBoolean("timer_running", mTimerRunning);
-        editor.putLong("end_time", mEndTime);
-        editor.apply();
-
-        if (mCountDownTimer != null) {
-            mCountDownTimer.cancel();
-        }
+        saveVariables();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
+        loadVariables();
+        initializeAfterLoading();
+    }
+
+    private void loadVariables() {
         SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
 
         mStartTimeInMillis = prefs.getLong("start_time_in_millis", 1500000);
         mTimeLeftinMillis = prefs.getLong("millis_left", mStartTimeInMillis);
         mTimerRunning = prefs.getBoolean("timer_running", false);
+        mTimerPaused = prefs.getBoolean("timer_paused", false);
 
         updateCountDownText();
         updateWatchInterface();
@@ -231,6 +275,22 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 startTimer();
             }
+        }
+    }
+
+    private void saveVariables() {
+        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putLong("start_time_in_millis", mStartTimeInMillis);
+        editor.putLong("millis_left", mTimeLeftinMillis);
+        editor.putBoolean("timer_running", mTimerRunning);
+        editor.putBoolean("timer_paused", mTimerPaused);
+        editor.putLong("end_time", mEndTime);
+        editor.apply();
+
+        if (mCountDownTimer != null) {
+            mCountDownTimer.cancel();
         }
     }
 }

@@ -6,39 +6,60 @@
     android:layout_height="match_parent"
     tools:context="com.song.alan.mypomodorotimer.MainActivity">
 
-    <EditText
-        android:id="@+id/edit_text_input"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/text_view_countdown"
-        android:layout_centerHorizontal="true"
-        android:hint="Seconds"
-        android:inputType="number"
-        android:maxLength="4" />
-
-    <Button
-        android:id="@+id/button_set"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/text_view_countdown"
-        android:layout_toEndOf="@+id/edit_text_input"
-        android:text="Set" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/view_dummy_outside" >
+    </View>
 
     <TextView
-        android:id="@+id/text_view_countdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Task Name" />
+
+    <EditText
+        android:id="@+id/edit_text_task"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true" />
+
+    <ViewSwitcher
+        android:id="@+id/view_switcher_countdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:text="00:00"
-        android:textColor="@android:color/black"
-        android:textSize="60sp" />
+        android:layout_centerVertical="true">
+
+        <TextView
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:id="@+id/text_view_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:text="00:00"
+            android:textColor="@android:color/black"
+            android:textSize="60sp" />
+
+        <NumberPicker
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:descendantFocusability="blocksDescendants"
+            android:id="@+id/number_picker_countdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        </NumberPicker>
+
+
+
+    </ViewSwitcher>
 
     <Button
         android:id="@+id/button_start_pause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/text_view_countdown"
+        android:layout_below="@+id/view_switcher_countdown"
         android:layout_centerHorizontal="true"
         android:text="start" />
 
@@ -46,7 +67,7 @@
         android:id="@+id/button_reset"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/text_view_countdown"
+        android:layout_below="@+id/view_switcher_countdown"
         android:layout_toRightOf="@+id/button_start_pause"
         android:text="reset"
         android:visibility="invisible"
